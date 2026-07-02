@@ -1,6 +1,6 @@
-import type { ExtensionAPI, ExtensionContext, MessageRenderer, SessionEntry } from "@mariozechner/pi-coding-agent";
-import { getMarkdownTheme, keyHint } from "@mariozechner/pi-coding-agent";
-import { Box, Spacer, Text, type Component, truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
+import type { ExtensionAPI, ExtensionContext, MessageRenderer, SessionEntry } from "@oh-my-pi/pi-coding-agent";
+import { getMarkdownTheme, keyHint } from "@oh-my-pi/pi-coding-agent";
+import { Box, Spacer, Text, type Component, truncateToWidth, visibleWidth } from "@oh-my-pi/pi-tui";
 import { createHash } from "node:crypto";
 import { renderMermaidAscii } from "beautiful-mermaid";
 
@@ -436,7 +436,15 @@ export default function (pi: ExtensionAPI) {
 
 				if (hasOverflow && !isExpanded) {
 					const remainingLines = selection.lineCount - COLLAPSED_LINES;
-					const hintText = `... (${remainingLines} more lines, ${keyHint("expandTools", "to expand")})`;
+					// omp #2998: keyHint's module-level theme/keybindings singletons are
+					// uninitialized in the plugin module graph — it may throw or return an
+					// empty key. Fall back to the default binding.
+					let expandHint = "ctrl+o to expand";
+					try {
+						const styled = keyHint("expandTools", "to expand");
+						if (visibleWidth(styled) > " to expand".length) expandHint = styled;
+					} catch {}
+					const hintText = `... (${remainingLines} more lines, ${expandHint})`;
 					lines.push(truncateToWidth(theme.fg("muted", hintText), contentWidth));
 				}
 
